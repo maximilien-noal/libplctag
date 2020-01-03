@@ -35,9 +35,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_dist)
 
 # the project is version 2.0
 set (libplctag_VERSION_MAJOR 2)
-set (libplctag_VERSION_MINOR 0)
-set (libplctag_VERSION_PATCH 28)
+set (libplctag_VERSION_MINOR 1)
+set (libplctag_VERSION_PATCH 0)
 set (VERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}.${libplctag_VERSION_PATCH}")
+
+set (LIB_NAME_SUFFIX "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}.${libplctag_VERSION_PATCH}")
 
 # we need threads
 find_package(Threads REQUIRED)
@@ -102,9 +104,14 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
         message("MSVC can handle C99, compiling code as C")
         set(BASE_C_FLAGS "${BASE_FLAGS} /c")
     endif()
+
+    set(STATIC_COMPILE_FLAGS "PUBLIC/PRIVATE /MT")
+    set(STATIC_LINK_FLAGS "PUBLIC/PRIVATE /INCREMENTAL:NO /NODEFAULTLIB:MSVCRT")
 else()
     #set(BASE_C_FLAGS "${BASE_FLAGS} -std=c99 -Wc++-compat ")
     set(BASE_C_FLAGS "${BASE_FLAGS} -std=c99")
+    set(STATIC_COMPILE_FLAGS "")
+    set(STATIC_LINK_FLAGS "-static")
 endif()
 
 set(BASE_CXX_FLAGS "${BASE_FLAGS}")
@@ -171,29 +178,54 @@ FOREACH( lib_src ${libplctag_SRCS} )
 ENDFOREACH()
 
 # shared library
-add_library(plctag SHARED ${libplctag_SRCS} )
+add_library(plctag_dyn SHARED ${libplctag_SRCS} )
+
+# static library
 add_library(plctag_static STATIC ${libplctag_SRCS} )
+
+# set various properties on them
+set_target_properties(plctag_dyn PROPERTIES SOVERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}" OUTPUT_NAME "plctag")
+set_target_properties(plctag_static PROPERTIES VERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}" OUTPUT_NAME "plctag")
+
 
 
 #if(THREADS_HAVE_PTHREAD_ARG)
-#  set_property(TARGET plctag PROPERTY COMPILE_OPTIONS "-pthread")
-#  set_property(TARGET plctag PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
+#  set_property(TARGET plctag_dyn PROPERTY COMPILE_OPTIONS "-pthread")
+#  set_property(TARGET plctag_dyn PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
 #endif()
 
 # make sure we link with the threading library.
 if (UNIX)
     if(CMAKE_THREAD_LIBS_INIT)
-      target_link_libraries(plctag "${CMAKE_THREAD_LIBS_INIT}")
+      target_link_libraries(plctag_static "${CMAKE_THREAD_LIBS_INIT}")
     endif()
 endif()
 
 # Windows needs to link the library to the WINSOCK library
 if (WIN32)
-    target_link_libraries(plctag ws2_32)
+    target_link_libraries(plctag_static ws2_32)
 endif()
 
 # add the examples and tests
 if (UNIX)
+    # regression tests
+#    set ( regression_test_FILES "${test_SRC_PATH}/regression/test.c"
+#                                "${test_SRC_PATH}/regression/logix.c"
+#                                "${test_SRC_PATH}/regression/logix.h"
+#                                "${test_SRC_PATH}/regression/packet.c"
+#                                "${test_SRC_PATH}/regression/packet.h"
+#                                "${test_SRC_PATH}/regression/util.c"
+#                                "${test_SRC_PATH}/regression/util.h" )
+#
+#
+#    foreach ( file ${regression_test_FILES} )
+#        set_source_files_properties("${file}" PROPERTIES COMPILE_FLAGS "${BASE_FLAGS} -std=c11")
+#    endforeach ( file )
+#
+#    add_executable ( ab_regression ${regression_test_FILES} )
+#    target_link_libraries ( ab_regression plctag_dyn pthread )
+
+
     # Logix simulator
     set ( lgx_sim_FILES "${test_SRC_PATH}/lgx_sim/log.h"
                         "${test_SRC_PATH}/lgx_sim/main.c"
@@ -212,7 +244,7 @@ if (UNIX)
     target_link_libraries ( lgx_sim pthread )
 
     add_executable(test_hashtable "${test_SRC_PATH}/hashtable/test_hashtable.c" "${util_SRC_PATH}/hashtable.h" "${util_SRC_PATH}/debug.h")
-    target_link_libraries(test_hashtable plctag pthread)
+    target_link_libraries(test_hashtable plctag_dyn pthread)
 
 
     set ( example_PROGRAMS async
@@ -238,7 +270,7 @@ if (UNIX)
                            tag_rw )
 
     set ( example_PROG_UTIL utils_posix.c )
-    set ( example_LIBRARIES plctag pthread )
+    set ( example_LIBRARIES plctag_static pthread )
 
 
 elseif(WIN32)
@@ -255,7 +287,7 @@ elseif(WIN32)
                            tag_rw )
 
     set ( example_PROG_UTIL utils_windows.c)
-    set ( example_LIBRARIES plctag ws2_32 )
+    set ( example_LIBRARIES plctag_static ws2_32 )
 endif()
 
 # simple.cpp is different because it is C++
@@ -265,8 +297,10 @@ target_link_libraries (simple_cpp ${example_LIBRARIES} )
 
 
 foreach ( example ${example_PROGRAMS} )
-    set_source_files_properties("${example_SRC_PATH}/${example}.c" PROPERTIES COMPILE_FLAGS ${BASE_C_FLAGS})
+    set_source_files_properties("${example_SRC_PATH}/${example}.c" PROPERTIES COMPILE_FLAGS ${STATIC_COMPILE_FLAGS} ${BASE_C_FLAGS})
     add_executable( ${example} "${example_SRC_PATH}/${example}.c" "${example_SRC_PATH}/${example_PROG_UTIL}" "${example_SRC_PATH}/utils.h" )
+
+    set_target_properties(${example} PROPERTIES LINK_FLAGS ${STATIC_LINK_FLAGS} )
     target_link_libraries(${example} ${example_LIBRARIES} )
 endforeach(example)
 
@@ -275,7 +309,7 @@ endforeach(example)
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/libplctag.pc.in" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc" @ONLY)
 
 # for installation
-install(TARGETS plctag DESTINATION lib${LIB_SUFFIX})
+install(TARGETS plctag_dyn DESTINATION lib${LIB_SUFFIX})
 install(TARGETS plctag_static DESTINATION lib${LIB_SUFFIX})
 install(FILES "${lib_SRC_PATH}/libplctag.h" DESTINATION include)
 install(FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc" DESTINATION "lib${LIB_SUFFIX}/pkgconfig")
