@@ -199,35 +199,45 @@ I only have Windows 7.  If you find that these instructions are wrong for Window
 # Instructions for Windows with MINGW or similar
 
 (Instructions from user alpep, thanks!)
-I would like to share with you how I build the Libplctag for OS: Win10 32bit by using Mingw.
-To be able to compile the code, I had to modify two files: platform.h and debug.h.
 
-Step by step procedure:
+I would like to share with you how I build the Libplctag for OS: Win10 32bit by using Mingw.
+
+## Step by step procedure:
 
 1. Download and install CMake:
-https://cmake.org/download/
-cmake-3.16.0-rc2-win32-x86.msi
-Add the CMake (C:\Program Files\CMake\bin) to the system PATH, can be done while installing it.
+
+  https://cmake.org/download/
+  
+  cmake-3.16.0-rc2-win32-x86.msi
+
+  Add the CMake path (C:\Program Files\CMake\bin) to the system PATH, can be done while installing it.
 
 2. Download and install MinGW64:
-https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download
-mingw-w64-install.exe
-Install using the default settings
 
-3. Download and unzip the library "libplctag-master", for example C:\libplctag-master;
+  https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download
+
+  mingw-w64-install.exe
+
+  Install using the default settings
+
+3. Download and unzip the library "libplctag-master", for example C:\libplctag-master.
 In folder C:\libplctag-master, create a new folder "Build";
 
 4. To build the library:
 In Windows Start menu, click on MinGW-W64\Run Terminal;
 This will add the MinGW directory to the system PATH and open the Windows command terminal.
 Enter command lines:
-> C: <Enter>
-> cd libplctag-master\Build <Enter>
-> cmake -G "MinGW Makefiles" .. <Enter>
-> mingw32-make <Enter>
 
-Binairies are in folder: C:\libplctag-master\Build\bin_dist
-Executable needs following files libgcc_s_dw2-1.dll and libwinpthread-1.dll which are found in C:\Program Files\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin.
+```
+C: <Enter>
+cd libplctag-master\Build <Enter>
+cmake -G "MinGW Makefiles" .. <Enter>
+mingw32-make <Enter>
+```
+
+Binairies are in folder: `C:\libplctag-master\Build\bin_dist`
+
+Executable needs following files `libgcc_s_dw2-1.dll` and `libwinpthread-1.dll` which are found in `C:\Program Files\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin`.
 
 Hope this could help someone else.
 
