@@ -5,7 +5,7 @@
   "tasks": [
     {
       "type": "shell",
-      "command": "./run.sh",
+      "command": "./make.sh",
       "label": "build",
       "problemMatcher": "$gcc",
       "group": {
